@@ -1,83 +1,84 @@
-Parallel Neural Network Inference Engine
+# Parallel Neural Network Inference Engine
 
-A Parallel and Distributed Computing course project that investigates how different CPU parallelization strategies affect the performance of Convolutional Neural Network (CNN) inference.
+A Parallel and Distributed Computing course project focused on implementing and evaluating different parallelization strategies for Convolutional Neural Network (CNN) inference using C++ and OpenMP.
 
-The project uses Fashion-MNIST for a 10-class image-classification task. A small CNN is trained using PyTorch and CUDA, its learned parameters are exported, and the forward pass is then implemented from scratch in C++. The C++ inference engine is used as the baseline for sequential and OpenMP-based parallel experiments.
+The project uses **Fashion-MNIST** for image classification. A lightweight CNN is trained using **PyTorch + CUDA**, its learned weights are exported, and the same model will be implemented in C++ for sequential and parallel inference experiments.
 
-Project Objectives
+---
 
-The main objectives are:
+## Project Overview
 
-Train a lightweight CNN on Fashion-MNIST.
+```text
+                    Fashion-MNIST
+                         |
+                         v
+                  PyTorch + CUDA
+                         |
+                         v
+                    CNN Training
+                         |
+                         v
+                  Trained Model
+                         |
+                         v
+                  Weight Export
+                         |
+                         v
+                C++ Inference Engine
+                         |
+              +----------+----------+
+              |          |          |
+              v          v          v
+         Sequential   Intra-Layer  Batch
+          Baseline     OpenMP      OpenMP
+              |          |          |
+              +----------+----------+
+                         |
+                         v
+                  Pipeline OpenMP
+                         |
+                         v
+                   Benchmarking
+                         |
+                         v
+               Performance Analysis
+```
 
-Use CUDA/GPU acceleration during the training phase.
+The main goal is to investigate how different CPU parallelization strategies affect CNN inference performance.
 
-Export the trained model parameters independently of PyTorch inference.
+---
 
-Implement the CNN forward pass in C++.
+## Objectives
 
-Establish a correct sequential CPU inference baseline.
+- Train a lightweight CNN on Fashion-MNIST.
+- Use CUDA/GPU acceleration during training.
+- Export the trained model parameters as binary files.
+- Implement the CNN forward pass from scratch in C++.
+- Establish a sequential CPU inference baseline.
+- Implement OpenMP-based parallel inference.
+- Compare different parallelization strategies.
+- Measure execution time, speedup, efficiency, and throughput.
+- Study scalability with different numbers of CPU threads.
+- Analyze bottlenecks and diminishing returns from parallelism.
 
-Investigate multiple OpenMP parallelization strategies:
+---
 
-Intra-layer parallelism
+## Dataset
 
-Batch parallelism
+The project uses the **Fashion-MNIST** dataset.
 
-Pipeline parallelism
+| Property | Value |
+|---|---:|
+| Training images | 60,000 |
+| Test images | 10,000 |
+| Image size | 28 x 28 |
+| Channels | 1 |
+| Classes | 10 |
+| Pixel values | 0-255 |
 
-Measure:
+The dataset is stored locally and is not committed to GitHub.
 
-Execution time
-
-Speedup
-
-Parallel efficiency
-
-Throughput
-
-Scalability with different thread counts
-
-Analyze the point at which additional parallelism stops providing proportional performance improvements.
-
-Dataset
-
-The project uses Fashion-MNIST.
-
-Dataset characteristics
-
-Property
-
-Value
-
-Training images
-
-60,000
-
-Test images
-
-10,000
-
-Image size
-
-28 × 28
-
-Channels
-
-1
-
-Classes
-
-10
-
-Pixel range
-
-0–255
-
-The dataset is stored locally and is intentionally not committed to GitHub.
-
-Expected local directory:
-
+```text
 faishon-dataset/
 ├── fashion-mnist_train.csv
 ├── fashion-mnist_test.csv
@@ -85,352 +86,370 @@ faishon-dataset/
 ├── train-labels-idx1-ubyte
 ├── t10k-images-idx3-ubyte
 └── t10k-labels-idx1-ubyte
+```
 
-Note: the directory is currently named faishon-dataset in this project.
+> Note: the directory is currently named `faishon-dataset` in this project.
 
-CNN Architecture
+---
 
-The project uses a deliberately small CNN so that the focus remains on inference performance and parallelization rather than model complexity.
+# CNN Architecture
 
+The project uses a lightweight CNN so that the primary focus remains on inference performance and parallelization.
+
+```text
 Input
-1 × 28 × 28
-     │
-     ▼
+1 x 28 x 28
+      |
+      v
 Conv2D
-1 → 8 filters
-3 × 3 kernel
-     │
-     ▼
+1 -> 8 filters
+3 x 3 kernel
+      |
+      v
 ReLU
-     │
-     ▼
+      |
+      v
 MaxPool
-2 × 2
-     │
-     ▼
+2 x 2
+      |
+      v
 Conv2D
-8 → 16 filters
-3 × 3 kernel
-     │
-     ▼
+8 -> 16 filters
+3 x 3 kernel
+      |
+      v
 ReLU
-     │
-     ▼
+      |
+      v
 MaxPool
-2 × 2
-     │
-     ▼
+2 x 2
+      |
+      v
 Flatten
-16 × 5 × 5 = 400
-     │
-     ▼
+16 x 5 x 5 = 400
+      |
+      v
 Fully Connected
-400 → 64
-     │
-     ▼
+400 -> 64
+      |
+      v
 ReLU
-     │
-     ▼
+      |
+      v
 Fully Connected
-64 → 10
-     │
-     ▼
-Class prediction
-
-Total trainable parameters:
-
-27,562
-
-Training
-
-Training is performed using:
-
-Python
-
-PyTorch
-
-CUDA
-
-NVIDIA GPU
-
-Adam optimizer
-
-Cross-entropy loss
-
-Fashion-MNIST
-
-The current training environment used an NVIDIA GeForce RTX 4050 Laptop GPU with a CUDA-enabled PyTorch installation.
-
-Current model result
-
-The improved training run achieved:
-
-Metric
-
-Result
-
-Best test accuracy
-
-90.92%
-
-Best test loss
-
-0.2573
-
-Final training accuracy
-
-92.96%
-
-Training time
-
-58.50 s
-
-Parameters
-
-27,562
-
-The best model is:
-
-training/models/fashion_cnn_best.pth
-
-Model files are intentionally excluded from GitHub.
-
-Training Pipeline
-
-Fashion-MNIST
-      │
-      ▼
-CSV Dataset
-      │
-      ▼
-PyTorch Dataset
-      │
-      ▼
-DataLoader
-      │
-      ▼
-CNN
-      │
-      ▼
-CUDA / RTX 4050
-      │
-      ▼
-Training
-      │
-      ▼
-Best model
-fashion_cnn_best.pth
-
-Weight Export
-
-The trained PyTorch model is not used directly by the C++ inference engine.
-
-Instead, the trained parameters are exported as raw float32 binary files.
-
-fashion_cnn_best.pth
-        │
-        ▼
-export_weights.py
-        │
-        ├── conv1_weight.bin
-        ├── conv1_bias.bin
-        ├── conv2_weight.bin
-        ├── conv2_bias.bin
-        ├── fc1_weight.bin
-        ├── fc1_bias.bin
-        ├── fc2_weight.bin
-        └── fc2_bias.bin
-
-Expected parameter shapes:
-
-Parameter
-
-Shape
-
-conv1_weight
-
-(8, 1, 3, 3)
-
-conv1_bias
-
-(8)
-
-conv2_weight
-
-(16, 8, 3, 3)
-
-conv2_bias
-
-(16)
-
-fc1_weight
-
-(64, 400)
-
-fc1_bias
-
-(64)
-
-fc2_weight
-
-(10, 64)
-
-fc2_bias
-
-(10)
-
-The binary weights are also excluded from GitHub.
-
-C++ Inference Engine
-
-The C++ implementation will reproduce the CNN forward pass without relying on PyTorch.
-
-The intended sequential execution is:
-
-Input
-  │
-  ▼
-Conv2D
-  │
-  ▼
-ReLU
-  │
-  ▼
-MaxPool
-  │
-  ▼
-Conv2D
-  │
-  ▼
-ReLU
-  │
-  ▼
-MaxPool
-  │
-  ▼
-Flatten
-  │
-  ▼
-Dense
-  │
-  ▼
-ReLU
-  │
-  ▼
-Dense
-  │
-  ▼
+64 -> 10
+      |
+      v
 Prediction
+```
+
+### Model Parameters
+
+```text
+27,562 trainable parameters
+```
+
+---
+
+# Training
+
+The CNN is trained using:
+
+- Python
+- PyTorch
+- CUDA
+- NVIDIA GeForce RTX 4050 Laptop GPU
+- Fashion-MNIST
+- Cross-Entropy Loss
+- Adam optimizer
+
+## Current Training Results
+
+The current best model achieved:
+
+| Metric | Result |
+|---|---:|
+| Best Test Accuracy | **90.92%** |
+| Best Test Loss | **0.2573** |
+| Final Training Accuracy | **92.96%** |
+| Training Time | **58.50 seconds** |
+| Parameters | **27,562** |
+
+The best trained model is stored locally as:
+
+```text
+training/models/fashion_cnn_best.pth
+```
+
+Model files are excluded from GitHub.
+
+---
+
+# Training Pipeline
+
+```text
+Fashion-MNIST
+      |
+      v
+CSV Dataset
+      |
+      v
+PyTorch Dataset
+      |
+      v
+DataLoader
+      |
+      v
+CNN Model
+      |
+      v
+CUDA / RTX 4050
+      |
+      v
+Training
+      |
+      v
+Best Model
+```
+
+### Train the model
+
+```bash
+cd training
+python3 train.py
+```
+
+---
+
+# Model Weight Export
+
+The C++ inference engine does not depend on PyTorch during inference.
+
+The trained model parameters are exported from PyTorch into raw binary files.
+
+```text
+fashion_cnn_best.pth
+        |
+        v
+export_weights.py
+        |
+        +-- conv1_weight.bin
+        +-- conv1_bias.bin
+        +-- conv2_weight.bin
+        +-- conv2_bias.bin
+        +-- fc1_weight.bin
+        +-- fc1_bias.bin
+        +-- fc2_weight.bin
+        +-- fc2_bias.bin
+```
+
+### Parameter Shapes
+
+| Parameter | Shape |
+|---|---|
+| `conv1_weight` | `(8, 1, 3, 3)` |
+| `conv1_bias` | `(8)` |
+| `conv2_weight` | `(16, 8, 3, 3)` |
+| `conv2_bias` | `(16)` |
+| `fc1_weight` | `(64, 400)` |
+| `fc1_bias` | `(64)` |
+| `fc2_weight` | `(10, 64)` |
+| `fc2_bias` | `(10)` |
+
+### Export weights
+
+```bash
+cd training
+python3 export_weights.py
+```
+
+The generated binary weight files are kept locally and ignored by Git.
+
+---
+
+# C++ Inference Engine
+
+The next major stage is implementing the CNN forward pass from scratch in C++.
+
+The intended inference pipeline is:
+
+```text
+Input
+  |
+  v
+Conv2D
+  |
+  v
+ReLU
+  |
+  v
+MaxPool
+  |
+  v
+Conv2D
+  |
+  v
+ReLU
+  |
+  v
+MaxPool
+  |
+  v
+Flatten
+  |
+  v
+Dense
+  |
+  v
+ReLU
+  |
+  v
+Dense
+  |
+  v
+Prediction
+```
 
 The C++ implementation will first be validated against the PyTorch model.
 
-The goal is:
+```text
+              Same Input
+                  |
+          +-------+-------+
+          |               |
+          v               v
+       PyTorch           C++
+          |               |
+          v               v
+     Prediction       Prediction
+          |               |
+          +-------+-------+
+                  |
+                  v
+               Compare
+                  |
+                  v
+              Must Match
+```
 
-Same input
-    │
-    ├───────────────┐
-    ▼               ▼
-PyTorch           C++
-    │               │
-    ▼               ▼
-Prediction       Prediction
-    │               │
-    └───────┬───────┘
-            ▼
-         MATCH
+Only after correctness is established will OpenMP parallelization be introduced.
 
-Only after correctness is established will parallelization be introduced.
+---
 
-Parallelization Strategies
+# Parallelization Strategies
 
-1. Sequential Baseline
+## 1. Sequential Baseline
 
-The complete CNN forward pass executes sequentially on the CPU.
+The complete CNN forward pass will first execute sequentially on the CPU.
 
 This provides the baseline:
 
+```text
 T_serial
+```
 
-All subsequent speedup calculations are based on this implementation.
+All parallel speedup calculations will be based on this implementation.
 
-2. Intra-Layer Parallelism
+---
 
-Independent operations inside a neural-network layer are distributed among OpenMP threads.
+## 2. Intra-Layer Parallelism
 
-Examples include:
+Independent operations within a neural-network layer will be distributed among OpenMP threads.
 
-output convolution channels
+Potential parallelization targets include:
 
-output pixels
-
-dense-layer neurons
+- Output convolution channels
+- Output pixels
+- Convolution operations
+- Dense-layer neurons
 
 Conceptually:
 
-             Conv2D
-                │
-       ┌────────┼────────┐
-       ▼        ▼        ▼
-    Thread 0 Thread 1 Thread 2 ...
-       │        │        │
-       └────────┼────────┘
-                ▼
-            Output
+```text
+                    Conv2D
+                      |
+          +-----------+-----------+
+          |           |           |
+          v           v           v
+       Thread 0    Thread 1    Thread 2
+          |           |           |
+          +-----------+-----------+
+                      |
+                      v
+                    Output
+```
 
-3. Batch Parallelism
+---
 
-Different input images are processed concurrently.
+## 3. Batch Parallelism
 
-Image 0 ──► Thread 0
-Image 1 ──► Thread 1
-Image 2 ──► Thread 2
-Image 3 ──► Thread 3
+Different input images can be processed concurrently.
+
+```text
+Image 0 ----------------> Thread 0
+Image 1 ----------------> Thread 1
+Image 2 ----------------> Thread 2
+Image 3 ----------------> Thread 3
 ...
+```
 
-This strategy is particularly relevant when multiple inference requests are available.
+This strategy is particularly useful when multiple inference requests are available.
 
-4. Pipeline Parallelism
+---
 
-Different stages of inference are organized as pipeline stages.
+## 4. Pipeline Parallelism
 
-Conceptually:
+Different CNN stages can be organized into pipeline stages.
 
-Stage 1       Stage 2       Stage 3       Stage 4
+```text
+Input
+  |
+  v
+[ Conv1 ] -> [ Pool1 ] -> [ Conv2 ] -> [ Pool2 ] -> [ Dense ]
+    |           |           |           |           |
+    v           v           v           v           v
+ Stage 1     Stage 2     Stage 3     Stage 4     Stage 5
+```
 
-Conv1  ───►   Pool1  ───►  Conv2  ───►  Dense
-   │             │            │            │
-Image 1       Image 1      Image 1      Image 1
-Image 2       Image 2      Image 2      Image 2
-Image 3       Image 3      Image 3      Image 3
+The objective is to determine whether pipeline execution can improve inference throughput for multiple inputs.
 
-The pipeline is intended to improve throughput when multiple inputs are processed.
+---
 
-Performance Metrics
+# Performance Evaluation
 
-The project will measure the following.
+The implementations will be evaluated using the following metrics.
 
-Execution Time
+## Execution Time
 
-T = total inference execution time
+```text
+T = Total inference execution time
+```
 
-Speedup
+## Speedup
 
+```text
 Speedup(p) = T_serial / T_parallel(p)
+```
 
-where p is the number of OpenMP threads.
+where `p` is the number of OpenMP threads.
 
-Parallel Efficiency
+## Parallel Efficiency
 
+```text
 Efficiency(p) = Speedup(p) / p
+```
 
-Throughput
+## Throughput
 
-Throughput = Number of processed samples / Total time
+```text
+Throughput = Number of Samples / Total Execution Time
+```
 
-Scalability
+## Scalability
 
-The implementation will be evaluated using different thread counts, for example:
+The implementation will be evaluated using different numbers of OpenMP threads, for example:
 
+```text
 1
 2
 4
@@ -438,268 +457,257 @@ The implementation will be evaluated using different thread counts, for example:
 12
 16
 ...
+```
 
 The exact thread counts will depend on the available CPU hardware.
 
-Project Structure
+---
 
+# Project Structure
+
+```text
 PDC-Project/
-│
-├── faishon-dataset/
-│
-├── training/
-│   ├── model.py
-│   ├── train.py
-│   ├── test_model.py
-│   ├── export_weights.py
-│   │
-│   └── models/
-│       ├── fashion_cnn_best.pth
-│       └── weights/
-│
-├── inference/
-│   ├── main.cpp
-│   ├── tensor.h
-│   ├── tensor.cpp
-│   │
-│   ├── layers/
-│   │   ├── convolution.h
-│   │   ├── convolution.cpp
-│   │   ├── activation.h
-│   │   ├── activation.cpp
-│   │   ├── pooling.h
-│   │   ├── pooling.cpp
-│   │   ├── dense.h
-│   │   ├── dense.cpp
-│   │   ├── softmax.h
-│   │   └── softmax.cpp
-│   │
-│   ├── sequential/
-│   ├── parallel/
-│   └── pipeline/
-│
-├── benchmarks/
-│   ├── benchmark.cpp
-│   └── results/
-│
-├── analysis/
-│   ├── analyze.py
-│   ├── plots.py
-│   └── results.csv
-│
-├── tests/
-│   ├── test_tensor.cpp
-│   ├── test_layers.cpp
-│   └── test_inference.cpp
-│
-├── docs/
-├── CMakeLists.txt
-├── requirements.txt
-├── project_structure.sh
-└── README.md
+|
++-- faishon-dataset/
+|
++-- training/
+|   +-- model.py
+|   +-- train.py
+|   +-- test_model.py
+|   +-- export_weights.py
+|   +-- models/
+|
++-- inference/
+|   +-- main.cpp
+|   +-- tensor.cpp
+|   +-- tensor.h
+|   |
+|   +-- layers/
+|   |   +-- convolution.cpp
+|   |   +-- convolution.h
+|   |   +-- activation.cpp
+|   |   +-- activation.h
+|   |   +-- pooling.cpp
+|   |   +-- pooling.h
+|   |   +-- dense.cpp
+|   |   +-- dense.h
+|   |   +-- softmax.cpp
+|   |   +-- softmax.h
+|   |
+|   +-- sequential/
+|   +-- parallel/
+|   +-- pipeline/
+|
++-- benchmarks/
+|   +-- benchmark.cpp
+|   +-- results/
+|
++-- analysis/
+|   +-- analyze.py
+|   +-- plots.py
+|
++-- tests/
+|   +-- test_tensor.cpp
+|   +-- test_layers.cpp
+|   +-- test_inference.cpp
+|
++-- docs/
++-- CMakeLists.txt
++-- requirements.txt
++-- project_structure.sh
++-- .gitignore
++-- README.md
+```
 
-Software Requirements
+---
 
-Python
+# Development Roadmap
 
-Python 3.x
+## Phase 1 - Model Training
 
-PyTorch
+- [x] Fashion-MNIST dataset prepared
+- [x] CNN implemented using PyTorch
+- [x] CUDA training configured
+- [x] Model trained
+- [x] 90.92% best test accuracy achieved
 
-pandas
+## Phase 2 - Model Export
 
-NumPy
+- [x] Trained model saved
+- [x] Weight export implemented
+- [x] Binary weight files generated
 
-C++
+## Phase 3 - C++ Inference
 
-GCC / G++
+- [ ] Tensor implementation
+- [ ] Binary weight loader
+- [ ] Conv2D implementation
+- [ ] ReLU implementation
+- [ ] MaxPool implementation
+- [ ] Dense layer implementation
+- [ ] Sequential inference
+- [ ] PyTorch vs C++ validation
 
-C++17 or newer
+## Phase 4 - Parallel Inference
 
-OpenMP
+- [ ] OpenMP intra-layer parallelism
+- [ ] OpenMP batch parallelism
+- [ ] OpenMP pipeline parallelism
 
-CMake
+## Phase 5 - Benchmarking
 
-The current development environment uses:
+- [ ] Sequential benchmark
+- [ ] Thread-scaling experiments
+- [ ] Speedup measurements
+- [ ] Parallel efficiency measurements
+- [ ] Throughput measurements
+- [ ] Scalability analysis
 
-GCC       13.3.0
-OpenMP    4.5
-PyTorch   2.5.1+cu121
-CUDA      12.1 PyTorch build
-GPU       NVIDIA GeForce RTX 4050 Laptop GPU
+## Phase 6 - Final Analysis
 
-Building the C++ Project
+- [ ] Compare sequential and parallel approaches
+- [ ] Identify performance bottlenecks
+- [ ] Analyze synchronization overhead
+- [ ] Analyze memory-access overhead
+- [ ] Study diminishing returns
+- [ ] Prepare final report
 
-The C++ build system is based on CMake.
+---
 
-The intended workflow is:
+# Technologies
 
+| Technology | Purpose |
+|---|---|
+| Python | Model training and analysis |
+| PyTorch | CNN implementation |
+| CUDA | GPU-accelerated training |
+| C++ | Custom inference engine |
+| OpenMP | CPU parallelization |
+| CMake | C++ build system |
+| Fashion-MNIST | Dataset |
+| Git / GitHub | Version control |
+
+---
+
+# Development Environment
+
+```text
+Operating System : Ubuntu 24.04
+Python            : 3.11.14
+PyTorch           : 2.5.1+cu121
+CUDA Build        : 12.1
+GPU               : NVIDIA GeForce RTX 4050 Laptop GPU
+GCC               : 13.3.0
+OpenMP            : 4.5
+```
+
+---
+
+# Building the C++ Project
+
+The C++ project uses CMake.
+
+Once the inference implementation is ready:
+
+```bash
 mkdir -p build
 cd build
 cmake ..
 make -j$(nproc)
+```
 
-The exact build targets will be added as the inference engine is implemented.
+The available build targets will be expanded as the C++ inference engine is implemented.
 
-Running Training
+---
 
-From the project root:
+# Git and Large Files
 
-cd training
-python3 train.py
+The following generated or large files are intentionally excluded from version control:
 
-To export the trained model parameters:
-
-python3 export_weights.py
-
-Development Methodology
-
-The project is being developed incrementally.
-
-Phase 1 — Machine Learning
-
-Dataset preparation
-
-CNN design
-
-GPU training
-
-Accuracy evaluation
-
-Model checkpointing
-
-Phase 2 — Model Export
-
-Extract PyTorch parameters
-
-Convert parameters to raw float32 binary files
-
-Validate parameter dimensions
-
-Phase 3 — Sequential C++ Inference
-
-Tensor abstraction
-
-Binary weight loading
-
-Convolution
-
-ReLU
-
-Max pooling
-
-Flattening
-
-Dense layers
-
-Prediction
-
-PyTorch/C++ correctness validation
-
-Phase 4 — Parallel Inference
-
-OpenMP intra-layer parallelism
-
-OpenMP batch parallelism
-
-OpenMP pipeline parallelism
-
-Phase 5 — Benchmarking
-
-Thread-count experiments
-
-Execution time measurements
-
-Speedup
-
-Efficiency
-
-Throughput
-
-Scalability analysis
-
-Phase 6 — Analysis
-
-Compare all execution strategies
-
-Identify bottlenecks
-
-Analyze synchronization and memory effects
-
-Study diminishing returns
-
-Relate observations to Amdahl's Law
-
-Current Status
-
-[✓] Fashion-MNIST dataset prepared
-[✓] CNN implemented in PyTorch
-[✓] CUDA/GPU training working
-[✓] 30-epoch improved training run
-[✓] 90.92% best test accuracy achieved
-[✓] Best model saved
-[✓] Model weights exported to binary files
-[✓] C++ compiler verified
-[✓] OpenMP support verified
-[✓] Project structure created
-[✓] Git repository initialized
-[✓] Initial commits pushed to GitHub
-
-[ ] C++ Tensor implementation
-[ ] Binary weight loader
-[ ] C++ Conv2D
-[ ] C++ ReLU
-[ ] C++ MaxPool
-[ ] C++ Dense layers
-[ ] Sequential inference
-[ ] PyTorch vs C++ validation
-[ ] OpenMP intra-layer implementation
-[ ] OpenMP batch implementation
-[ ] OpenMP pipeline implementation
-[ ] Benchmarking
-[ ] Performance analysis
-[ ] Final report
-
-Expected Final Comparison
-
-The final project will compare:
-
-                    CNN Inference
-                         │
-          ┌──────────────┼──────────────┐
-          │              │              │
-          ▼              ▼              ▼
-     Sequential      Intra-layer      Batch
-          │           OpenMP          OpenMP
-          │              │              │
-          └──────────────┼──────────────┘
-                         │
-                         ▼
-                      Pipeline
-                      OpenMP
-                         │
-                         ▼
-                   Benchmarking
-                         │
-          ┌──────────────┼──────────────┐
-          ▼              ▼              ▼
-       Time           Speedup       Efficiency
-                         │
-                         ▼
-                    Scalability
-
-The final analysis will determine which strategy provides the best performance under different workloads and thread counts, and where additional parallelism begins to provide diminishing returns.
-
-Git and Large Files
-
-The following files are intentionally excluded from Git:
-
+```text
 faishon-dataset/
 training/models/*.pth
 training/models/**/*.bin
+```
 
-The repository contains the source code and scripts required to reproduce the training/export workflow rather than committing the dataset and generated model artifacts.
+The repository contains the source code, training scripts, inference implementation, tests, and benchmarking tools.
 
-License
+---
 
-This project is developed as an academic Parallel and Distributed Computing course project.
+# Expected Final Experiment
+
+The final experiment will compare:
+
+```text
+                    CNN Inference
+                         |
+          +--------------+--------------+
+          |              |              |
+          v              v              v
+     Sequential      Intra-Layer      Batch
+       Baseline        OpenMP        OpenMP
+          |              |              |
+          +--------------+--------------+
+                         |
+                         v
+                    Pipeline OpenMP
+                         |
+                         v
+                    Benchmarking
+                         |
+          +--------------+--------------+
+          |              |              |
+          v              v              v
+      Execution        Speedup       Efficiency
+        Time
+                         |
+                         v
+                    Scalability
+```
+
+The final objective is to determine which parallelization strategy provides the best performance for CNN inference and how performance changes as the number of CPU threads increases.
+
+---
+
+# Current Status
+
+The machine-learning preparation stage is complete.
+
+```text
+Fashion-MNIST
+     |
+     v
+PyTorch CNN
+     |
+     v
+CUDA Training
+     |
+     v
+90.92% Test Accuracy
+     |
+     v
+Weight Export
+     |
+     v
+C++ Inference Engine  <-- CURRENT STAGE
+     |
+     +-- Sequential
+     |
+     +-- OpenMP Intra-Layer
+     |
+     +-- OpenMP Batch
+     |
+     +-- OpenMP Pipeline
+```
+
+### Current milestone
+
+The next development milestone is:
+
+**Implement the C++ Tensor class, binary weight loader, and sequential CNN inference engine.**
+
+---
+
+## Academic Project
+
+This project is developed as part of a **Parallel and Distributed Computing** course project.
