@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+
+# Dataset
+faishon-dataset/
+
+# Python/model outputs
+training/models/*.pth
+training/models/*.pt
+training/models/**/*.bin
+
+# Benchmark generated results
+benchmarks/results/
+
+# Build files
+build/
+cmake-build-*/
+*.o
+*.obj
+*.exe
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
