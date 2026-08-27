@@ -711,3 +711,45 @@ The next development milestone is:
 ## Academic Project
 
 This project is developed as part of a **Parallel and Distributed Computing** course project.
+
+# Manual Verification Steps
+
+Here is the complete sequence of commands to verify the engine manually from a clean state.
+
+### 1. Build the project
+Compile both the main inference executable and the benchmark runner:
+```bash
+g++ -O3 -Wall -Wextra -std=c++17 -fopenmp inference/main.cpp inference/tensor.cpp inference/layers/*.cpp inference/sequential/*.cpp inference/parallel/*.cpp inference/pipeline/*.cpp -o inference_engine
+g++ -O3 -Wall -Wextra -std=c++17 -fopenmp benchmarks/benchmark.cpp inference/tensor.cpp inference/layers/*.cpp inference/sequential/*.cpp inference/parallel/*.cpp inference/pipeline/*.cpp -o run_benchmarks
+```
+*(Note: Ensure you are in the project root. If you see no errors, it built successfully.)*
+
+### 2. Run `--verify`
+Check accuracy and speedups across all modes.
+```bash
+./inference_engine --verify --batch 1000 --threads 8
+./inference_engine --verify --batch 10000 --threads 16
+```
+*(Expectation: "Accuracy Match" must be exactly 100.0% for every mode. Speedups should generally scale up. If any mode is <100%, correctness is broken.)*
+
+### 3. Run Demo 4a and 4b (5 images)
+```bash
+./inference_engine --mode demo --input-dir demo/images/
+```
+*(Expectation: Single Image (4a) should show decent scaling. Multiple Images (4b) will show erratic/noisy scaling because 5 images finish in microseconds, meaning thread-pool spin-up overhead dominates.)*
+
+### 4. Run Demo 4b (100 images)
+```bash
+./inference_engine --mode demo --input-dir demo/images_100/
+```
+*(Expectation: The pipeline nested parallelism will show smoother and better scaling (~1.7x at 4 threads) compared to the 5-image run, because the pipeline fill/drain cost is amortized.)*
+
+### 5. Regenerate Benchmarks & Plots
+Run the full benchmark suite and regenerate all plots.
+```bash
+./run_benchmarks
+source venv/bin/activate
+python analysis/plots.py
+deactivate
+```
+*(Expectation: `run_benchmarks` will generate `benchmarks/results/results.csv`. `plots.py` will read it and output 6 new graphs to `analysis/plots/`. The execution time plot should show a flat horizontal line for the Sequential baseline.)*
