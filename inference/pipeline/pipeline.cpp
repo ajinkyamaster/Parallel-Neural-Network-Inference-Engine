@@ -1,5 +1,7 @@
 #include "pipeline.h"
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 #include <vector>
 
 PipelineInference::PipelineInference(const std::string& weights_dir)
@@ -30,11 +32,16 @@ Tensor PipelineInference::forward(const Tensor& input, ParallelMode mode) const 
     int* s3 = stage3_vec.data();
     int* s4 = stage4_vec.data();
     
-    int requested_threads = omp_get_max_threads();
+    int requested_threads = 1;
+#ifdef _OPENMP
+    requested_threads = omp_get_max_threads();
+#endif
     int threads_per_stage = std::max(1, requested_threads / 4);
     
+#ifdef _OPENMP
     #pragma omp parallel
     #pragma omp single
+#endif
     {
         for (size_t b = 0; b < batch; ++b) {
             Tensor* t1 = new Tensor();
@@ -42,9 +49,13 @@ Tensor PipelineInference::forward(const Tensor& input, ParallelMode mode) const 
             Tensor* t3 = new Tensor();
             
             // Stage 1: Conv1 + ReLU1 + Pool1
+#ifdef _OPENMP
             #pragma omp task depend(in: s1[b > 0 ? b - 1 : 0]) depend(out: s1[b])
+#endif
             {
+#ifdef _OPENMP
                 omp_set_num_threads(threads_per_stage);
+#endif
                 Tensor single_img({1, 1, 28, 28});
                 for (size_t i = 0; i < 28 * 28; ++i) {
                     single_img.get(i) = input.get4d(b, 0, i / 28, i % 28);
@@ -55,9 +66,13 @@ Tensor PipelineInference::forward(const Tensor& input, ParallelMode mode) const 
             }
             
             // Stage 2: Conv2 + ReLU2 + Pool2
+#ifdef _OPENMP
             #pragma omp task depend(in: s1[b], s2[b > 0 ? b - 1 : 0]) depend(out: s2[b])
+#endif
             {
+#ifdef _OPENMP
                 omp_set_num_threads(threads_per_stage);
+#endif
                 *t2 = conv2.forward(*t1, mode);
                 *t2 = relu2.forward(*t2, mode);
                 *t2 = pool2.forward(*t2, mode);
@@ -65,9 +80,13 @@ Tensor PipelineInference::forward(const Tensor& input, ParallelMode mode) const 
             }
             
             // Stage 3: Flatten + FC1 + ReLU3
+#ifdef _OPENMP
             #pragma omp task depend(in: s2[b], s3[b > 0 ? b - 1 : 0]) depend(out: s3[b])
+#endif
             {
+#ifdef _OPENMP
                 omp_set_num_threads(threads_per_stage);
+#endif
                 Tensor flattened({1, 16 * 5 * 5});
                 flattened.data = std::move(t2->data);
                 delete t2;
@@ -77,9 +96,13 @@ Tensor PipelineInference::forward(const Tensor& input, ParallelMode mode) const 
             }
             
             // Stage 4: FC2 + Softmax
+#ifdef _OPENMP
             #pragma omp task depend(in: s3[b], s4[b > 0 ? b - 1 : 0]) depend(out: s4[b])
+#endif
             {
+#ifdef _OPENMP
                 omp_set_num_threads(threads_per_stage);
+#endif
                 Tensor final_out = fc2.forward(*t3, mode);
                 final_out = softmax.forward(final_out, mode);
                 delete t3;

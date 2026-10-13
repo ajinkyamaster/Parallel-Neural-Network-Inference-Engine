@@ -1,7 +1,9 @@
 #include "activation.h"
 #include <algorithm>
 #include <cmath>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 Tensor ReLU::forward(const Tensor& input, ParallelMode mode, int batch_idx) const {
     Tensor output = input;
@@ -12,7 +14,9 @@ Tensor ReLU::forward(const Tensor& input, ParallelMode mode, int batch_idx) cons
         size_t start = b * elements_per_batch;
         size_t end = start + elements_per_batch;
         
+        #ifdef _OPENMP
         #pragma omp parallel for if(mode == ParallelMode::INTRA_LAYER)
+        #endif
         for (size_t i = start; i < end; ++i) {
             if (output.get(i) < 0.0f) {
                 output.get(i) = 0.0f;
@@ -26,7 +30,9 @@ Tensor ReLU::forward(const Tensor& input, ParallelMode mode, int batch_idx) cons
         size_t batch = input.shape[0];
         size_t elements_per_batch = input.size() / batch;
         
+        #ifdef _OPENMP
         #pragma omp parallel for
+        #endif
         for (size_t b = 0; b < batch; ++b) {
             size_t start = b * elements_per_batch;
             size_t end = start + elements_per_batch;
@@ -39,7 +45,9 @@ Tensor ReLU::forward(const Tensor& input, ParallelMode mode, int batch_idx) cons
     } else {
         // Includes INTRA_LAYER over the full flattened tensor
         // This is perfectly valid as one big chunked loop
+        #ifdef _OPENMP
         #pragma omp parallel for if(mode == ParallelMode::INTRA_LAYER)
+        #endif
         for (size_t i = 0; i < output.size(); ++i) {
             if (output.get(i) < 0.0f) {
                 output.get(i) = 0.0f;
@@ -65,7 +73,9 @@ Tensor Softmax::forward(const Tensor& input, ParallelMode mode, int batch_idx) c
     // Parallelizing over classes is too small. 
     // So for INTRA_LAYER, parallelizing the outer b loop here makes the most sense as well.
     // The instructions say "Enter parallel region once per layer call" which this does.
-    #pragma omp parallel for if(mode == ParallelMode::BATCH && batch_idx == -1 || mode == ParallelMode::INTRA_LAYER)
+    #ifdef _OPENMP
+    #pragma omp parallel for if(((mode == ParallelMode::BATCH) && (batch_idx == -1)) || (mode == ParallelMode::INTRA_LAYER))
+    #endif
     for (size_t b = b_start; b < b_end; ++b) {
         float max_val = input.get2d(b, 0);
         for (size_t c = 1; c < classes; ++c) {

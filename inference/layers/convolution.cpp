@@ -1,6 +1,8 @@
 #include "convolution.h"
 #include <iostream>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 Conv2D::Conv2D(const std::string& weight_path, const std::string& bias_path, std::vector<size_t> w_shape, int stride, int padding) 
     : weights(w_shape), biases({w_shape[0]}), stride(stride), padding(padding) {
@@ -43,7 +45,10 @@ Tensor Conv2D::forward(const Tensor& input, ParallelMode mode, int batch_idx) co
     };
     
     if (mode == ParallelMode::INTRA_LAYER) {
+        // [OpenMP Parallel Region: Threaded across output feature channels]
+        #ifdef _OPENMP
         #pragma omp parallel for
+        #endif
         for (size_t oc = 0; oc < out_channels; ++oc) {
             for (size_t b = b_start; b < b_end; ++b) {
                 for (size_t oh = 0; oh < out_h; ++oh) {
@@ -54,7 +59,10 @@ Tensor Conv2D::forward(const Tensor& input, ParallelMode mode, int batch_idx) co
             }
         }
     } else {
+        // [OpenMP Parallel Region: Threaded across batch images]
+        #ifdef _OPENMP
         #pragma omp parallel for if(mode == ParallelMode::BATCH && batch_idx == -1)
+        #endif
         for (size_t b = b_start; b < b_end; ++b) {
             for (size_t oc = 0; oc < out_channels; ++oc) {
                 for (size_t oh = 0; oh < out_h; ++oh) {
