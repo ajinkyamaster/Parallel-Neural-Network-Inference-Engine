@@ -3,7 +3,9 @@
 #include <string>
 #include <fstream>
 #include <chrono>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 #include <iomanip>
 
 #include "tensor.h"
@@ -39,7 +41,11 @@ bool load_float32_bin(const std::string& filepath, std::vector<float>& data) {
 }
 
 double run_engine_get_time(const std::string& mode, const std::string& weights_dir, const Tensor& input, Tensor& output, int threads) {
+#ifdef _OPENMP
     omp_set_num_threads(threads);
+#else
+    (void)threads;
+#endif
     auto start = std::chrono::high_resolution_clock::now();
     
     if (mode == "sequential") {
@@ -245,7 +251,9 @@ int main(int argc, char* argv[]) {
                   << "1.00x\n";
         
         // Enable nested parallelism
+#ifdef _OPENMP
         omp_set_max_active_levels(2);
+#endif
         
         for (int t : t_counts) {
             double pipe_nested_t = run_engine_get_time("pipeline_nested", weights_dir, demo_images, out, t);
@@ -259,7 +267,9 @@ int main(int argc, char* argv[]) {
     }
     
     // Standard execution logic
+#ifdef _OPENMP
     omp_set_num_threads(threads);
+#endif
     
     std::cout << "Loading test data..." << std::endl;
     Tensor test_images({batch_size, 1, 28, 28});

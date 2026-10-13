@@ -1,6 +1,8 @@
 #include "dense.h"
 #include <iostream>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 Dense::Dense(const std::string& weight_path, const std::string& bias_path, std::vector<size_t> w_shape)
     : weights(w_shape), biases({w_shape[0]}) {
@@ -19,7 +21,10 @@ Tensor Dense::forward(const Tensor& input, ParallelMode mode, int batch_idx) con
     size_t b_end = (batch_idx == -1) ? batch : batch_idx + 1;
     
     if (mode == ParallelMode::INTRA_LAYER) {
+        // [OpenMP Parallel Region: Threaded across output features]
+        #ifdef _OPENMP
         #pragma omp parallel for
+        #endif
         for (size_t of = 0; of < out_features; ++of) {
             for (size_t b = b_start; b < b_end; ++b) {
                 float sum = biases.get(of);
@@ -30,7 +35,10 @@ Tensor Dense::forward(const Tensor& input, ParallelMode mode, int batch_idx) con
             }
         }
     } else {
+        // [OpenMP Parallel Region: Threaded across batch images]
+        #ifdef _OPENMP
         #pragma omp parallel for if(mode == ParallelMode::BATCH && batch_idx == -1)
+        #endif
         for (size_t b = b_start; b < b_end; ++b) {
             for (size_t of = 0; of < out_features; ++of) {
                 float sum = biases.get(of);

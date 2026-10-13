@@ -1,7 +1,9 @@
 #include "pooling.h"
 #include <algorithm>
 #include <limits>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 MaxPool2D::MaxPool2D(int kernel_size, int stride) : kernel_size(kernel_size), stride(stride) {}
 
@@ -20,7 +22,10 @@ Tensor MaxPool2D::forward(const Tensor& input, ParallelMode mode, int batch_idx)
     size_t b_end = (batch_idx == -1) ? batch : batch_idx + 1;
     
     if (mode == ParallelMode::INTRA_LAYER) {
+        // [OpenMP Parallel Region: Threaded across channels]
+        #ifdef _OPENMP
         #pragma omp parallel for
+        #endif
         for (size_t c = 0; c < channels; ++c) {
             for (size_t b = b_start; b < b_end; ++b) {
                 for (size_t oh = 0; oh < out_h; ++oh) {
@@ -42,7 +47,10 @@ Tensor MaxPool2D::forward(const Tensor& input, ParallelMode mode, int batch_idx)
             }
         }
     } else {
+        // [OpenMP Parallel Region: Threaded across batch images]
+        #ifdef _OPENMP
         #pragma omp parallel for if(mode == ParallelMode::BATCH && batch_idx == -1)
+        #endif
         for (size_t b = b_start; b < b_end; ++b) {
             for (size_t c = 0; c < channels; ++c) {
                 for (size_t oh = 0; oh < out_h; ++oh) {
